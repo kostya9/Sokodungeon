@@ -1,5 +1,7 @@
 using Godot;
 using System;
+using System.Collections;
+using System.Linq;
 
 public class Camera : Godot.Camera
 {
@@ -20,9 +22,36 @@ public class Camera : Godot.Camera
 		{
 			Move(key);
 			Rotate(key);
+
+		}
+
+		if (@event is InputEventMouseButton mouseButton)
+		{
+			Raycast(mouseButton);
 		}
 		
 		base._Input(@event);
+	}
+
+	private void Raycast(InputEventMouseButton mouseButton)
+	{
+		// Right click?
+		if ((ButtonList)mouseButton.ButtonIndex == ButtonList.Right)
+		{
+			var spaceState = GetWorld().DirectSpaceState;
+			var viewport = GetViewport();
+
+			var from = ProjectRayOrigin(mouseButton.Position);
+			var to = from + ProjectRayNormal(mouseButton.Position) * 100f;
+
+			var result = spaceState.IntersectRay(from, to);
+
+			if (result.Count > 0)
+			{
+				var collider = result["collider"] as Node;
+				Console.WriteLine(collider.Name);
+			}
+		}
 	}
 
 	private void Move(InputEventKey key)
