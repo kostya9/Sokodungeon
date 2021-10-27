@@ -1,7 +1,5 @@
 using Godot;
 using System;
-using System.Collections;
-using System.Linq;
 
 public class Camera : Godot.Camera
 {
@@ -48,7 +46,7 @@ public class Camera : Godot.Camera
 
 			if (result.Count > 0)
 			{
-				var collider = result["collider"] as Node;
+				var collider = (Node)result["collider"];
 				Console.WriteLine(collider.Name);
 			}
 		}
