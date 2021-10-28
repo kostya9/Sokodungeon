@@ -1,17 +1,11 @@
 using Godot;
 using System;
 
-public class Camera : Godot.Camera
+public class Player : Spatial
 {
-	// Declare member variables here. Examples:
-	// private int a = 2;
-	// private string b = "text";
-
-	// Called when the node enters the scene tree for the first time.
-
 	public override void _Ready()
 	{
-		
+
 	}
 
 	public override void _Input(InputEvent @event)
@@ -38,9 +32,9 @@ public class Camera : Godot.Camera
 		{
 			var spaceState = GetWorld().DirectSpaceState;
 			var viewport = GetViewport();
-
-			var from = ProjectRayOrigin(mouseButton.Position);
-			var to = from + ProjectRayNormal(mouseButton.Position) * 100f;
+			var camera = (Camera)GetNode("Camera");
+			var from = camera.ProjectRayOrigin(mouseButton.Position);
+			var to = from + camera.ProjectRayNormal(mouseButton.Position) * 100f;
 
 			var result = spaceState.IntersectRay(from, to);
 
