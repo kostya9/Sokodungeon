@@ -5,8 +5,10 @@ public class Player : Spatial
 {
 	public override void _Ready()
 	{
-
+		
 	}
+	
+	
 
 	public override void _Input(InputEvent @event)
 	{
@@ -14,11 +16,11 @@ public class Player : Spatial
 		{
 			Move(key);
 			Rotate(key);
-
 		}
 
 		if (@event is InputEventMouseButton mouseButton)
 		{
+			Console.WriteLine("click");
 			Raycast(mouseButton);
 		}
 		
@@ -31,8 +33,10 @@ public class Player : Spatial
 		if ((ButtonList)mouseButton.ButtonIndex == ButtonList.Right)
 		{
 			var spaceState = GetWorld().DirectSpaceState;
+			
 			var viewport = GetViewport();
 			var camera = (Camera)GetNode("Camera");
+			
 			var from = camera.ProjectRayOrigin(mouseButton.Position);
 			var to = from + camera.ProjectRayNormal(mouseButton.Position) * 100f;
 
@@ -46,6 +50,30 @@ public class Player : Spatial
 		}
 	}
 
+	private bool CanMoveInto(Vector3 direction)
+	{
+		var rayCast = (RayCast)GetNode("RayCast");
+		var drawer = (ImmediateGeometry) GetNode("Drawer");
+		
+		var to = direction;
+		
+		rayCast.CastTo = direction;
+		
+		drawer.Clear();
+		
+		drawer.Begin(Mesh.PrimitiveType.Lines);
+		drawer.SetColor(Colors.Red);
+		drawer.AddVertex(Translation);
+		drawer.AddVertex(direction);
+		drawer.End();
+
+		rayCast.ForceRaycastUpdate();
+		
+		Console.WriteLine(rayCast.IsColliding());
+		
+		return !rayCast.IsColliding();
+	}
+
 	private void Move(InputEventKey key)
 	{
 		var tween = (Tween) GetNode("Tween");
@@ -55,23 +83,30 @@ public class Player : Spatial
 			return;
 		}
 		
-		var forward = Transform.basis.z.Normalized();
-		
+		var forward = Transform.basis.x.Normalized();
+
 		var movementVector = (KeyList) key.Scancode switch
 		{
-			KeyList.Up => -forward,
-			KeyList.Down => forward,
-			KeyList.Left => forward.Cross(Vector3.Up),
-			KeyList.Right => -forward.Cross(Vector3.Up),
+			KeyList.Up => forward,
+			KeyList.Down => -forward,
+			KeyList.Left => -forward.Cross(Vector3.Up),
+			KeyList.Right => forward.Cross(Vector3.Up),
 			_ => Vector3.Zero
 		};
 		
 		if(movementVector == Vector3.Zero)
 			return;
+		
+		movementVector = movementVector.Normalized() * 4;
+		
+		var direction = Translation + movementVector;
+
+		if (!CanMoveInto(movementVector))
+			return;
 
 		tween.InterpolateProperty(this, "translation",
 			Translation,
-			Translation + movementVector.Normalized() * 4,
+			direction,
 			0.2f,
 			Tween.TransitionType.Sine,
 			Tween.EaseType.InOut);
