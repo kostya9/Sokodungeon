@@ -54,22 +54,28 @@ public class Player : Spatial
 	{
 		var rayCast = (RayCast)GetNode("RayCast");
 		var drawer = (ImmediateGeometry) GetNode("Drawer");
-		
-		var to = direction;
-		
+
+		rayCast.GlobalTransform = GlobalTransform; 
+		rayCast.Rotation = new Vector3(0, 0, 0);
+
 		rayCast.CastTo = direction;
-		
+
 		drawer.Clear();
 		
 		drawer.Begin(Mesh.PrimitiveType.Lines);
 		drawer.SetColor(Colors.Red);
-		drawer.AddVertex(Translation);
+		drawer.AddVertex(new Vector3(0, 0, 0));
 		drawer.AddVertex(direction);
 		drawer.End();
 
 		rayCast.ForceRaycastUpdate();
 		
 		Console.WriteLine(rayCast.IsColliding());
+
+		if (rayCast.IsColliding())
+		{
+			Console.WriteLine(rayCast.GetCollisionPoint());
+		}
 		
 		return !rayCast.IsColliding();
 	}
@@ -83,7 +89,7 @@ public class Player : Spatial
 			return;
 		}
 		
-		var forward = Transform.basis.x.Normalized();
+		var forward = -Transform.basis.z.Normalized();
 
 		var movementVector = (KeyList) key.Scancode switch
 		{
@@ -93,15 +99,26 @@ public class Player : Spatial
 			KeyList.Right => forward.Cross(Vector3.Up),
 			_ => Vector3.Zero
 		};
-		
+
+
 		if(movementVector == Vector3.Zero)
 			return;
 		
 		movementVector = movementVector.Normalized() * 4;
 		
 		var direction = Translation + movementVector;
+		
+		var forwardRay = 4 * Vector3.Forward;
+		var movementVectorRay = (KeyList) key.Scancode switch
+		{
+			KeyList.Up => forwardRay,
+			KeyList.Down => -forwardRay,
+			KeyList.Left => -forwardRay.Cross(Vector3.Up),
+			KeyList.Right => forwardRay.Cross(Vector3.Up),
+			_ => Vector3.Zero
+		};
 
-		if (!CanMoveInto(movementVector))
+		if (!CanMoveInto(movementVectorRay))
 			return;
 
 		tween.InterpolateProperty(this, "translation",
