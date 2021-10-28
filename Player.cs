@@ -50,29 +50,24 @@ public class Player : Spatial
 		}
 	}
 
-	private bool CanMoveInto(Vector3 direction)
+	private bool CanMoveInto(Vector3 endpoint)
 	{
-		var rayCast = (RayCast)GetNode("RayCast");
-		var drawer = (ImmediateGeometry) GetNode("Drawer");
-		
-		var to = direction;
-		
-		rayCast.CastTo = direction;
-		
-		drawer.Clear();
-		
-		drawer.Begin(Mesh.PrimitiveType.Lines);
-		drawer.SetColor(Colors.Red);
-		drawer.AddVertex(Translation);
-		drawer.AddVertex(direction);
-		drawer.End();
+		var spaceState = GetWorld().DirectSpaceState;
+		var from = GlobalTransform.origin;
 
-		rayCast.ForceRaycastUpdate();
+		var intersectionResult = spaceState.IntersectRay(from, endpoint, null, 2147483647, false, true);
+
+		if (intersectionResult.Count > 0)
+		{
+			Console.WriteLine(intersectionResult);
+			return false;
+		}
 		
-		Console.WriteLine(rayCast.IsColliding());
 		
-		return !rayCast.IsColliding();
+		
+		return true;
 	}
+	
 
 	private void Move(InputEventKey key)
 	{
@@ -98,15 +93,14 @@ public class Player : Spatial
 			return;
 		
 		movementVector = movementVector.Normalized() * 4;
-		
-		var direction = Translation + movementVector;
+		var endpoint = Translation + movementVector;
 
-		if (!CanMoveInto(movementVector))
+		if (!CanMoveInto(endpoint))
 			return;
 
 		tween.InterpolateProperty(this, "translation",
 			Translation,
-			direction,
+			endpoint,
 			0.2f,
 			Tween.TransitionType.Sine,
 			Tween.EaseType.InOut);
