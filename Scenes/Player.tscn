@@ -1,22 +1,47 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=12 format=2]
 
-[ext_resource path="res://Textures/Prototype/Orange/texture_05.png" type="Texture" id=1]
+[ext_resource path="res://Textures/Prototype/Dark/texture_08.png" type="Texture" id=1]
 [ext_resource path="res://Player.cs" type="Script" id=2]
 [ext_resource path="res://Textures/Prototype/Red/texture_10.png" type="Texture" id=3]
 
-[sub_resource type="CubeMesh" id=1]
-size = Vector3( 1, 1, 1 )
+[sub_resource type="PrismMesh" id=1]
+size = Vector3( 1, 1, 0.2 )
 
 [sub_resource type="SpatialMaterial" id=2]
-albedo_texture = ExtResource( 1 )
+albedo_texture = ExtResource( 3 )
 uv1_triplanar = true
 
 [sub_resource type="CubeMesh" id=3]
-size = Vector3( 0.5, 0.5, 0.5 )
+size = Vector3( 0.4, 1, 0.2 )
 
 [sub_resource type="SpatialMaterial" id=4]
 albedo_texture = ExtResource( 3 )
 uv1_triplanar = true
+
+[sub_resource type="CubeMesh" id=5]
+size = Vector3( 0.25, 0.25, 0.25 )
+
+[sub_resource type="SpatialMaterial" id=6]
+albedo_texture = ExtResource( 1 )
+uv1_triplanar = true
+
+[sub_resource type="Animation" id=8]
+resource_name = "Step"
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:translation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.5, 1 ),
+"transitions": PoolRealArray( 2, 2, 1 ),
+"update": 0,
+"values": [ Vector3( -1, 1.5, 0.05 ), Vector3( -1, 1.5, -0.1 ), Vector3( -1, 1.5, 0.05 ) ]
+}
+
+[sub_resource type="BoxShape" id=7]
+extents = Vector3( 2, 2, 2 )
 
 [node name="Player" type="Spatial"]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.27554e-05, 0.00321007, -0.00184965 )
@@ -24,27 +49,36 @@ script = ExtResource( 2 )
 
 [node name="Tween" type="Tween" parent="."]
 
-[node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 1, 0 )
+[node name="Drawer" type="ImmediateGeometry" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 )
+
+[node name="Pointer" type="MeshInstance" parent="."]
+transform = Transform( 0, 1, 4.37114e-08, 0, -4.37114e-08, 1, 1, 0, 0, 6.36646e-12, 0.5, 0 )
 mesh = SubResource( 1 )
 material/0 = SubResource( 2 )
 
-[node name="MeshInstance2" type="MeshInstance" parent="MeshInstance"]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.252998 )
+[node name="PointerTail" type="MeshInstance" parent="Pointer"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, -4.37722e-08 )
 mesh = SubResource( 3 )
 material/0 = SubResource( 4 )
 
-[node name="Camera" type="Camera" parent="."]
-transform = Transform( -0.00135016, -0.000219868, -0.999999, -0.000357123, 1, -0.000219386, 0.999999, 0.000356826, -0.00135024, 0, 1.6, 0 )
+[node name="CameraHolder" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.5, 0.1 )
+
+[node name="Camera" type="Camera" parent="CameraHolder"]
+transform = Transform( 2.98023e-08, 0, -1, 0, 1, 0, 1, 0, 2.98023e-08, 0, 0, 0 )
 current = true
-fov = 90.0
 near = 0.55
 
-[node name="RayCast" type="RayCast" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0 )
-enabled = true
-collide_with_areas = true
-collide_with_bodies = false
+[node name="CameraMesh" type="MeshInstance" parent="CameraHolder"]
+mesh = SubResource( 5 )
+material/0 = SubResource( 6 )
 
-[node name="Drawer" type="ImmediateGeometry" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 )
+[node name="AnimationPlayer" type="AnimationPlayer" parent="CameraHolder"]
+anims/Step = SubResource( 8 )
+
+[node name="Collider" type="Area" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0 )
+
+[node name="PlayerCollisionBox" type="CollisionShape" parent="Collider"]
+shape = SubResource( 7 )

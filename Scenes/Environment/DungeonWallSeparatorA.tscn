@@ -8,11 +8,11 @@ uv1_triplanar = true
 
 [sub_resource type="CubeMesh" id=2]
 material = SubResource( 1 )
-size = Vector3( 1, 4, 1 )
+size = Vector3( 0.75, 4, 0.75 )
 
 [node name="DungeonWallSeparatorA" type="Spatial"]
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0414684, 1.99542, 0.01752 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0 )
 mesh = SubResource( 2 )
 material/0 = null

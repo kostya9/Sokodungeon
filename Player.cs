@@ -2,14 +2,27 @@ using Godot;
 using System;
 
 public class Player : Spatial
-{
+{	
 	public override void _Ready()
 	{
 		
 	}
-	
-	
 
+	public Spatial GetCameraHolder()
+	{
+		return (Spatial) GetNode("CameraHolder");
+	}
+	
+	public Camera GetCamera()
+	{
+		return (Camera) GetCameraHolder().GetNode("Camera");
+	}
+	
+	public AnimationPlayer GetCameraAnimationPlayer()
+	{
+		return (AnimationPlayer)GetCameraHolder().GetNode("AnimationPlayer");
+	}
+	
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is InputEventKey key)
@@ -49,23 +62,15 @@ public class Player : Spatial
 			}
 		}
 	}
+	
+	
 
 	private bool CanMoveInto(Vector3 endpoint)
 	{
 		var spaceState = GetWorld().DirectSpaceState;
 		var from = GlobalTransform.origin;
-
 		var intersectionResult = spaceState.IntersectRay(from, endpoint, null, 2147483647, false, true);
-
-		if (intersectionResult.Count > 0)
-		{
-			Console.WriteLine(intersectionResult);
-			return false;
-		}
-		
-		
-		
-		return true;
+		return intersectionResult.Count == 0;
 	}
 	
 
@@ -105,6 +110,7 @@ public class Player : Spatial
 			Tween.TransitionType.Sine,
 			Tween.EaseType.InOut);
 
+		GetCameraAnimationPlayer().Play("Step", -1f, 5);
 		tween.Start();
 	}
 	
@@ -126,9 +132,10 @@ public class Player : Spatial
 			KeyList.E => rightRotation,
 			_ => Vector3.Zero
 		};
-		
+
 		if (rotVector == Vector3.Zero)
 			return;
+		
 
 		tween.InterpolateProperty(this, "rotation_degrees",
 			RotationDegrees,

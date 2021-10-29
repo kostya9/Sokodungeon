@@ -19,6 +19,7 @@ transform = Transform( -1, 0, 2.14569e-07, 0, 1, 0, -2.14569e-07, 0, -1, 1.20797
 [node name="DungeonFoor2" parent="." instance=ExtResource( 2 )]
 
 [node name="Player" parent="." instance=ExtResource( 1 )]
+transform = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -1.27554e-05, 0.00321007, -0.00184965 )
 
 [node name="DungeonFloor1" parent="." instance=ExtResource( 2 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4 )
@@ -49,3 +50,6 @@ transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2, -4.5, -6 )
 
 [node name="DungeonWallSeparatorA8" parent="." instance=ExtResource( 4 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -4.5, -6 )
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 0, -0.866025, 0.5, 0, 0.5, 0.866025, -1, 0, 0, 9.5, 9, 0 )
