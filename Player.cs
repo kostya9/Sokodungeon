@@ -2,7 +2,9 @@ using Godot;
 using System;
 
 public class Player : Spatial
-{	
+{
+	public const float MOVE_TIME = 0.2f;
+	
 	public override void _Ready()
 	{
 		
@@ -106,11 +108,14 @@ public class Player : Spatial
 		tween.InterpolateProperty(this, "translation",
 			Translation,
 			endpoint,
-			0.2f,
+			MOVE_TIME,
 			Tween.TransitionType.Sine,
 			Tween.EaseType.InOut);
 
-		GetCameraAnimationPlayer().Play("Step", -1f, 5);
+
+		var animationTime = (float)GetCameraAnimationPlayer().GetAnimation("Step").Length;
+		var customSpeed = animationTime / MOVE_TIME;
+		GetCameraAnimationPlayer().Play("Step", customSpeed: customSpeed);
 		tween.Start();
 	}
 	
@@ -140,7 +145,7 @@ public class Player : Spatial
 		tween.InterpolateProperty(this, "rotation_degrees",
 			RotationDegrees,
 			RotationDegrees + rotVector,
-			0.2f,
+			MOVE_TIME,
 			Tween.TransitionType.Sine,
 			Tween.EaseType.InOut);
 

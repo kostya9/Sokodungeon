@@ -19,7 +19,7 @@ transform = Transform( -1, 0, 2.14569e-07, 0, 1, 0, -2.14569e-07, 0, -1, 1.20797
 [node name="DungeonFoor2" parent="." instance=ExtResource( 2 )]
 
 [node name="Player" parent="." instance=ExtResource( 1 )]
-transform = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -1.27554e-05, 0.00321007, -0.00184965 )
+transform = Transform( -4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3.57628e-06, 3.18289e-05, -3.05474e-07 )
 
 [node name="DungeonFloor1" parent="." instance=ExtResource( 2 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4 )
