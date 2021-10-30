@@ -1,12 +1,15 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dungeon;
 
 public class Player : Spatial
 {
 	public const float MOVE_TIME = 0.2f;
+	public const float TILE_SIZE = 4;
+	public const float TILE_HEIGHT = 4.5f;
+	
+	
 	private readonly Queue<InputEvent> _unprocessedInputEvents = new();
 	private readonly Dictionary<uint, List<string>> _actionsByKeycode = new();
 	private Tween _tween;
@@ -43,6 +46,11 @@ public class Player : Spatial
 	{
 		if (!_tween.IsActive())
 		{
+			if (ShouldFall())
+			{
+				FallDown();
+			}
+			
 			if (_unprocessedInputEvents.Count > 0)
 			{
 				var unprocessedEvent = _unprocessedInputEvents.Dequeue();
@@ -50,6 +58,20 @@ public class Player : Spatial
 				ProcessInput(unprocessedEvent);
 			}
 		}
+	}
+
+	private void FallDown()
+	{
+		var endpoint = Translation + new Vector3(0, -TILE_HEIGHT, 0);
+		
+		_tween.InterpolateProperty(this, "translation",
+			Translation,
+			endpoint,
+			MOVE_TIME,
+			Tween.TransitionType.Sine,
+			Tween.EaseType.InOut);
+
+		_tween.Start();
 	}
 
 	public Spatial GetCameraHolder()
@@ -133,11 +155,35 @@ public class Player : Spatial
 		}
 	}
 
+	private bool ShouldFall()
+	{
+		var spaceState = GetWorld().DirectSpaceState;
+		var from = GlobalTransform.origin;
+
+		var endpoint = from + new Vector3(0, -TILE_HEIGHT * 2, 0);
+		
+		var intersectionResult = spaceState.IntersectRay(from, endpoint, collideWithAreas: true);
+
+		// There is nothing under us? whaaat?
+		if (intersectionResult.Count == 0)
+		{
+			return false;
+		}
+
+		var intersectionPoint = (Vector3)intersectionResult["position"];
+		if (from.y - intersectionPoint.y > TILE_HEIGHT)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	private bool CanMoveInto(Vector3 endpoint)
 	{
 		var spaceState = GetWorld().DirectSpaceState;
 		var from = GlobalTransform.origin;
-		var intersectionResult = spaceState.IntersectRay(from, endpoint, null, 2147483647, false, true);
+		var intersectionResult = spaceState.IntersectRay(from, endpoint, collideWithAreas: true);
 		return intersectionResult.Count == 0;
 	}
 	
@@ -158,7 +204,7 @@ public class Player : Spatial
 		if(movementVector == Vector3.Zero)
 			return;
 		
-		movementVector = movementVector.Normalized() * 4;
+		movementVector = movementVector.Normalized() * TILE_SIZE;
 		var endpoint = Translation + movementVector;
 
 		if (!CanMoveInto(endpoint))
