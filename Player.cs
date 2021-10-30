@@ -10,54 +10,97 @@ public class Player : Spatial
 	public const float TILE_HEIGHT = 4.5f;
 	
 	
-	private readonly Queue<InputEvent> _unprocessedInputEvents = new();
-	private readonly Dictionary<uint, List<string>> _actionsByKeycode = new();
+	private readonly Queue<PlayerMovementState> _unprocessedMovement = new();
 	private Tween _tween;
 
 	public override void _Ready()
 	{
 		_tween = (Tween) GetNode("Tween");
-
-		InitializeKeyToActionMapping();
 	}
-
-	private void InitializeKeyToActionMapping()
+	
+	private bool ProcessMovement(PlayerMovementState movementState)
 	{
-		foreach (string action in InputMap.GetActions())
+		if (Move(movementState))
 		{
-			foreach (InputEvent inputEvent in InputMap.GetActionList(action))
-			{
-				if (inputEvent is InputEventKey key)
-				{
-					if (!_actionsByKeycode.TryGetValue(key.Scancode, out var actionsList))
-					{
-						actionsList = new List<string>();
-
-						_actionsByKeycode[key.Scancode] = actionsList;
-					}
-
-					actionsList.Add(action);
-				}
-			}
+			return true;	
 		}
+
+		if (Rotate(movementState))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	public override void _Process(float delta)
 	{
+		var movementState = PlayerMovement.ReadState();
+		
 		if (!_tween.IsActive())
 		{
+			// The order is important
+			// Input queue should not interfere with falling
+			
 			if (ShouldFall())
 			{
 				FallDown();
+				return;
 			}
 			
-			if (_unprocessedInputEvents.Count > 0)
+			if (_unprocessedMovement.Count > 0)
 			{
-				var unprocessedEvent = _unprocessedInputEvents.Dequeue();
-				
-				ProcessInput(unprocessedEvent);
+				var toProcess = _unprocessedMovement.Dequeue();
+				if (ProcessMovement(toProcess))
+				{
+					return;
+				}
+			}
+
+			if (ProcessMovement(movementState))
+			{
+				return;
+			}
+
+			return;
+		}
+		
+		if (ShouldQueueMovementInput(movementState))
+		{
+			_unprocessedMovement.Enqueue(movementState);
+		}
+	}
+
+	private bool ShouldQueueMovementInput(PlayerMovementState movementState)
+	{
+		const int queueLimit = 1;
+
+		if (_unprocessedMovement.Count >= queueLimit)
+		{
+			return false;
+		}
+
+		// Allocate stuff on stack
+		ReadOnlySpan<MovementKeyState> keys = stackalloc MovementKeyState[6]
+		{
+			movementState.Forwards,
+			movementState.Backwards,
+			movementState.Left,
+			movementState.Right,
+
+			movementState.RotateLeft,
+			movementState.RotateRight,
+		};
+
+		foreach (var key in keys)
+		{
+			if (key.JustPressed)
+			{
+				return true;
 			}
 		}
+
+		return false;
 	}
 
 	private void FallDown()
@@ -91,45 +134,13 @@ public class Player : Spatial
 	
 	public override void _Input(InputEvent @event)
 	{
-		ProcessInput(@event);
-		
-		base._Input(@event);
-	}
-
-	private void ProcessInput(InputEvent @event)
-	{
-		if (@event is InputEventKey key)
-		{
-			if (!_actionsByKeycode.TryGetValue(key.Scancode, out var actions))
-			{
-				return;
-			}
-
-			var isTweenActive = _tween.IsActive();
-
-			foreach (var action in actions)
-			{
-				if (isTweenActive)
-				{
-					const int queueLimit = 2;
-					if (Input.IsActionJustPressed(action) && _unprocessedInputEvents.Count < queueLimit)
-					{
-						_unprocessedInputEvents.Enqueue(key);
-					}
-				}
-				else
-				{
-					Move(key, action);
-					Rotate(key, action);	
-				}
-			}
-		}
-
 		if (@event is InputEventMouseButton mouseButton)
 		{
 			Console.WriteLine("click");
 			Raycast(mouseButton);
 		}	
+		
+		base._Input(@event);
 	}
 
 	private void Raycast(InputEventMouseButton mouseButton)
@@ -139,7 +150,6 @@ public class Player : Spatial
 		{
 			var spaceState = GetWorld().DirectSpaceState;
 			
-			var viewport = GetViewport();
 			var camera = (Camera)GetNode("Camera");
 			
 			var from = camera.ProjectRayOrigin(mouseButton.Position);
@@ -188,27 +198,27 @@ public class Player : Spatial
 	}
 	
 
-	private void Move(InputEventKey key, string action)
+	private bool Move(PlayerMovementState movementKeyState)
 	{
 		var forward = Transform.basis.x.Normalized();
 
-		var movementVector = action switch
+		var movementVector = movementKeyState switch
 		{
-			DungeonActions.Forwards => forward,
-			DungeonActions.Backwards => -forward,
-			DungeonActions.Left => -forward.Cross(Vector3.Up),
-			DungeonActions.Right => forward.Cross(Vector3.Up),
+			{ Forwards: { Pressed: true } } => forward,
+			{ Backwards: { Pressed: true } } => -forward,
+			{ Left: { Pressed: true } } => -forward.Cross(Vector3.Up),
+			{ Right: { Pressed: true } } => forward.Cross(Vector3.Up),
 			_ => Vector3.Zero
 		};
 		
 		if(movementVector == Vector3.Zero)
-			return;
+			return false;
 		
 		movementVector = movementVector.Normalized() * TILE_SIZE;
 		var endpoint = Translation + movementVector;
 
 		if (!CanMoveInto(endpoint))
-			return;
+			return false;
 
 		_tween.InterpolateProperty(this, "translation",
 			Translation,
@@ -221,22 +231,24 @@ public class Player : Spatial
 		var customSpeed = animationTime / MOVE_TIME;
 		GetCameraAnimationPlayer().Play("Step", customSpeed: customSpeed);
 		_tween.Start();
+
+		return true;
 	}
 	
-	private void Rotate(InputEventKey key, string action)
+	private bool Rotate(PlayerMovementState movementKeyState)
 	{
 		var leftRotation = new Vector3(0, 90, 0);
 		var rightRotation = -leftRotation;
 		
-		var rotVector = action switch
+		var rotVector = movementKeyState switch
 		{
-			DungeonActions.RotateLeft => leftRotation,
-			DungeonActions.RotateRight => rightRotation,
+			{ RotateLeft: { Pressed: true } } => leftRotation,
+			{ RotateRight: { Pressed: true } } => rightRotation,
 			_ => Vector3.Zero
 		};
 
 		if (rotVector == Vector3.Zero)
-			return;
+			return false;
 		
 
 		_tween.InterpolateProperty(this, "rotation_degrees",
@@ -247,11 +259,7 @@ public class Player : Spatial
 			Tween.EaseType.InOut);
 
 		_tween.Start();
-	}
 
-	//  // Called every frame. 'delta' is the elapsed time since the previous frame.
-//  public override void _Process(float delta)
-//  {
-//      
-//  }
+		return true;
+	}
 }
