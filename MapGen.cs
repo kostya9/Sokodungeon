@@ -11,22 +11,22 @@ public class MapGen : Node
 
 	private string map = @"
   - - -          
-p + + +|o o o|+|
+p + + +|     |+|
   - -  
-o o o|+|o o o|+|
+     |+|     |+|
 
-o o o|+|o o o|+|
+     |+|     |+|
 
-o o o|+|o o o|+|
+     |+|     |+|
 
-o o o|+|o o o|+|
+     |+|     |+|
 
-o o o|+|o o o|+|
+     |+|     |+|
 
-o o o|+|o o o|+|
+     |+|     |+|
         - - -   
-o o o|+ + + + +|
-- - - - - - - -
+     |+ + + + +|
+      - - - - -
 ";
 
 	public struct Map
@@ -76,6 +76,11 @@ o o o|+ + + + +|
 			for (int col = 0; col < rowContent.Length; col++)
 			{
 				var current = rowContent[col];
+				
+				if (col % 2 == 1)
+				{
+					x++;
+				}
 
 				if (row % 2 == 0) // Horizontal walls
 				{
@@ -89,11 +94,6 @@ o o o|+ + + + +|
 							Type = WallType.Horizontal
 						});
 					}
-					
-					if (col % 2 == 1)
-					{
-						x++;
-					}
 				}
 				else // Vertical walls, player and cells
 				{
@@ -103,8 +103,6 @@ o o o|+ + + + +|
 						{
 							Position = new Vector2(x, y)
 						});
-
-						x++;
 					}
 					else if (current == '|')
 					{
@@ -125,12 +123,6 @@ o o o|+ + + + +|
 						{
 							Position = new Vector2(x, y)
 						});
-
-						x++;
-					}
-					else if (current == 'o')
-					{
-						x++;
 					}
 				}
 			}
