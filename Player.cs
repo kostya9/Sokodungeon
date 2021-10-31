@@ -5,7 +5,7 @@ using Dungeon;
 
 public class Player : Spatial
 {
-	public const float MOVE_TIME = 0.2f;
+	public const float MOVE_TIME = 0.4f;
 	public const float TILE_SIZE = 4;
 	public const float TILE_HEIGHT = 4.5f;
 	
