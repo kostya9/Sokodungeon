@@ -334,13 +334,16 @@ p + + +|     | |
 
 	private void DrawCells(Floor floor, int floorIdx, PackedScene floorResource)
 	{
+		var r = new Random();
 		foreach (var cell in floor.Cells)
 		{
+			var rot = r.Next(4) * Mathf.Pi / 2;
 			var copy = (Spatial) floorResource.Instance();
 
 			var worldX = xLength * cell.Position.x;
 			var worldZ = yLength * cell.Position.y;
 			copy.Translation = new Vector3(worldX, -floorIdx * floorHeight, worldZ);
+			copy.Rotation = new Vector3(0, rot, 0);
 
 			AddChild(copy);
 		}
