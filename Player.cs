@@ -168,7 +168,8 @@ public class Player : Spatial
 	private bool ShouldFall()
 	{
 		var spaceState = GetWorld().DirectSpaceState;
-		var from = GlobalTransform.origin;
+		var playerHeight = 0.5f; // We need to include playerHeight to include the tile under us in collision testing
+		var from = GlobalTransform.origin + new Vector3(0, playerHeight, 0);
 
 		var endpoint = from + new Vector3(0, -TILE_HEIGHT * 2, 0);
 		

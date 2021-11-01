@@ -9,9 +9,9 @@ public class MapGen : Node
 	// private int a = 2;
 	// private string b = "text";
 
-	private string map = @"
-  - - -          
-p + + +|     |+|
+	private string[] map = {@"
+  - - -       - 
+p + + +|     | |
   - -  
      |+|     |+|
 
@@ -27,15 +27,38 @@ p + + +|     |+|
         - - -   
      |+ + + + +|
       - - - - -
-";
+", @"
+  - - -       -  
+ |+ + +|     |+|
+  - -  
+     |+|     |+|
 
-	public struct Map
+     |+|     |+|
+
+     |+|     |+|
+
+     |+|     |+|
+
+     |+|     |+|
+
+     |+|     |+|
+        - - -   
+     |+ + + + +|
+      - - - - -
+"};
+
+	public struct Floor
 	{
 		public Cell[] Cells;
 		
-		public Wall[] Walls;
-		public int PlayerX { get; set; }
-		public int PlayerY { get; set; }
+		public Wall[] Walls;	
+	}
+
+	public struct Map
+	{
+		public Floor[] Floors { get; set; }
+		
+		public Player Player { get; set; }
 	}
 
 	public struct Wall
@@ -57,9 +80,16 @@ p + + +|     |+|
 		public Vector2 Position;
 	}
 
-	public Map ParseMap(string map)
+	public struct Player
 	{
-		var lines = map.Trim('\r', '\n').Split('\r', '\n');
+		public Vector2 Position { get; set; }
+		
+		public int FloorIdx { get; set; }
+	}
+
+	public (Floor, Player?) ParseFloor(int floorIdx, string floorMap)
+	{
+		var lines = floorMap.Trim('\r', '\n').Split('\r', '\n');
 
 		List<Cell> cells = new List<Cell>();
 		List<Wall> walls = new List<Wall>();
@@ -69,6 +99,7 @@ p + + +|     |+|
 
 		int playerX = 0, 
 			playerY = 0;
+		var foundPlayer = false;
 
 		for (var row = 0; row < lines.Length; row++)
 		{
@@ -118,6 +149,7 @@ p + + +|     |+|
 					{
 						playerX = x;
 						playerY = y;
+						foundPlayer = true;
 
 						cells.Add(new Cell
 						{
@@ -135,20 +167,54 @@ p + + +|     |+|
 			x = 0;
 		}
 
-		return new Map
+		Player? player = foundPlayer
+			? new Player
+			{
+				Position = new Vector2(playerX, playerY),
+				FloorIdx = floorIdx
+			}
+			: null;
+		var floor = new Floor
 		{
 			Cells = cells.ToArray(),
-			Walls = walls.ToArray(),
-			PlayerX = playerX,
-			PlayerY = playerY
+			Walls = walls.ToArray()
+		}; 
+
+		return (floor, player);
+	}
+
+	private Map ParseMap(string[] floorMaps)
+	{
+		var floors = new List<Floor>();
+		Player? player = null;
+
+		for (var floorIdx = 0; floorIdx < floorMaps.Length; floorIdx++)
+		{
+			var floorMap = floorMaps[floorIdx];
+			var (floor, playerCandidate) = ParseFloor(floorIdx, floorMap);
+
+			floors.Add(floor);
+
+			if (playerCandidate.HasValue)
+			{
+				player = playerCandidate.Value;
+			}
+		}
+
+		return new Map
+		{
+			Floors = floors.ToArray(),
+			Player = player ?? new Player {Position = new Vector2(0, 0), FloorIdx = 0}
 		};
 	}
 
 	private const float xLength = 4.0f;
 	private const float yLength = 4.0f;
+	private const float floorHeight = 4.5f;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		
 		var parsed = ParseMap(map);
 		
 		var player = (Spatial) GetNode("Player");
@@ -157,14 +223,19 @@ p + + +|     |+|
 		var floorResource = (PackedScene)ResourceLoader.Load("res://Scenes/Environment/DungeonTileA.tscn");
 		var columnResource = (PackedScene)ResourceLoader.Load("res://Scenes/Environment/DungeonWallSeparatorA.tscn");
 
-		player.Translation = new Vector3(parsed.PlayerX * xLength, 0, parsed.PlayerY * yLength);
+		player.Translation = new Vector3(parsed.Player.Position.x * xLength, -parsed.Player.FloorIdx * floorHeight, parsed.Player.Position.y * yLength);
 
-		DrawCells(parsed, floorResource);
-		DrawWalls(parsed, wallResource);
-		DrawColumns(parsed, columnResource);
+		for (var floorIdx = 0; floorIdx < parsed.Floors.Length; floorIdx++)
+		{
+			var floor = parsed.Floors[floorIdx];
+			
+			DrawCells(floor, floorIdx, floorResource);
+			DrawWalls(floor, floorIdx, wallResource);
+			DrawColumns(floor, floorIdx, columnResource);
+		}
 	}
 
-	private void DrawColumns(Map parsed, PackedScene columnResource)
+	private void DrawColumns(Floor parsed, int floorIdx, PackedScene columnResource)
 	{
 		var wallsByStartPosition = parsed.Walls.ToLookup(x => x.FirstCellPos);
 		var wallsByEndPosition = parsed.Walls.ToLookup(x => x.SecondCellPos);
@@ -207,7 +278,7 @@ p + + +|     |+|
 				{
 					if (wallBySecondPos.Type == WallType.Vertical)
 					{
-						columns.Add(new Vector2(wall.FirstCellPos.x + 0.5f, wall.FirstCellPos.y - 0.5f));
+						columns.Add(new Vector2(wall.FirstCellPos.x - 0.5f, wall.FirstCellPos.y + 0.5f));
 					}
 				}
 			}
@@ -256,29 +327,29 @@ p + + +|     |+|
 		foreach (var columnPos in columns)
 		{
 			var columnNode = (Spatial) columnResource.Instance();
-			columnNode.Translation = new Vector3(columnPos.x * xLength, 0, columnPos.y * yLength);
+			columnNode.Translation = new Vector3(columnPos.x * xLength, -floorIdx * floorHeight, columnPos.y * yLength);
 			AddChild(columnNode);
 		}
 	}
 
-	private void DrawCells(Map parsed, PackedScene floorResource)
+	private void DrawCells(Floor floor, int floorIdx, PackedScene floorResource)
 	{
-		foreach (var cell in parsed.Cells)
+		foreach (var cell in floor.Cells)
 		{
 			var copy = (Spatial) floorResource.Instance();
 
 			var worldX = xLength * cell.Position.x;
 			var worldZ = yLength * cell.Position.y;
-			copy.Translation = new Vector3(worldX, 0f, worldZ);
+			copy.Translation = new Vector3(worldX, -floorIdx * floorHeight, worldZ);
 
 			AddChild(copy);
 		}
 	}
 
-	private void DrawWalls(Map parsed, PackedScene wallResource)
+	private void DrawWalls(Floor floor, int floorIdx, PackedScene wallResource)
 	{
-		var cellsByPosition = parsed.Cells.ToDictionary(x => x.Position);
-		foreach (var wall in parsed.Walls)
+		var cellsByPosition = floor.Cells.ToDictionary(x => x.Position);
+		foreach (var wall in floor.Walls)
 		{
 			var worldFirstX = xLength * wall.FirstCellPos.x;
 			var worldFirstZ = yLength * wall.FirstCellPos.y;
@@ -289,45 +360,85 @@ p + + +|     |+|
 			var worldX = (worldFirstX + worldSecondX) / 2;
 			var worldZ = (worldFirstZ + worldSecondZ) / 2;
 
-			var translation = new Vector3(worldX, 0, worldZ);
+			var translation = new Vector3(worldX, -floorIdx * floorHeight, worldZ);
 
 			if (wall.Type == WallType.Vertical)
 			{
 				var top = wall.FirstCellPos;
-				if (cellsByPosition.ContainsKey(top))
+				var bot = wall.SecondCellPos;
+
+				var hasTop = cellsByPosition.ContainsKey(top);
+				var hasBot = cellsByPosition.ContainsKey(bot);
+				
+				var rotationTop = new Vector3(0, 3 * Mathf.Pi / 2, 0);
+				if (hasTop)
 				{
 					var copy = (Spatial) wallResource.Instance();
 					copy.Translation = translation;
-					copy.Rotation = new Vector3(0, 3 * Mathf.Pi / 2, 0);
+					copy.Rotation = rotationTop;
 					AddChild(copy);
 				}
 
-				var bot = wall.SecondCellPos;
-				if (cellsByPosition.ContainsKey(bot))
+				var rotationBot = new Vector3(0, Mathf.Pi / 2, 0);
+				if (hasBot)
 				{
 					var copy = (Spatial) wallResource.Instance();
 					copy.Translation = translation;
-					copy.Rotation = new Vector3(0, Mathf.Pi / 2, 0);
+					copy.Rotation = rotationBot;
 					AddChild(copy);
+				}
+
+				if (!hasTop && !hasBot)
+				{
+					var copyBot = (Spatial) wallResource.Instance();
+					copyBot.Translation = translation;
+					copyBot.Rotation = rotationBot;
+					AddChild(copyBot);
+					
+					var copyTop = (Spatial) wallResource.Instance();
+					copyTop.Translation = translation;
+					copyTop.Rotation = rotationTop;
+					AddChild(copyTop);
 				}
 			}
 			else
 			{
 				var left = wall.FirstCellPos;
-				if (cellsByPosition.ContainsKey(left))
+				var right = wall.SecondCellPos;
+
+				var hasLeft = cellsByPosition.ContainsKey(left);
+				var hasRight = cellsByPosition.ContainsKey(right);
+				
+				var rotationLeft = new Vector3(0, Mathf.Pi, 0);
+				var rotationRight =  new Vector3(0, 0, 0);
+				
+				if (hasLeft)
 				{
 					var copy = (Spatial) wallResource.Instance();
 					copy.Translation = translation;
-					copy.Rotation = new Vector3(0, Mathf.Pi, 0);
+					copy.Rotation = rotationLeft;
 					AddChild(copy);
 				}
-
-				var right = wall.SecondCellPos;
-				if (cellsByPosition.ContainsKey(right))
+				
+				if (hasRight)
 				{
 					var copy = (Spatial) wallResource.Instance();
 					copy.Translation = translation;
+					copy.Rotation = rotationRight;
 					AddChild(copy);
+				}
+				
+				if (!hasLeft && !hasRight)
+				{
+					var copyLeft = (Spatial) wallResource.Instance();
+					copyLeft.Translation = translation;
+					copyLeft.Rotation = rotationLeft;
+					AddChild(copyLeft);
+					
+					var copyRight = (Spatial) wallResource.Instance();
+					copyRight.Translation = translation;
+					copyRight.Rotation = rotationRight;
+					AddChild(copyRight);
 				}
 			}
 		}
