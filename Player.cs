@@ -6,8 +6,6 @@ using Dungeon;
 public class Player : Spatial
 {
     public const float MOVE_TIME = 0.45f;
-    public const float TILE_SIZE = 5.2f;
-    public const float TILE_HEIGHT = 4.5f;
     
     
     private readonly Queue<PlayerMovementState> _unprocessedMovement = new();
@@ -105,7 +103,7 @@ public class Player : Spatial
 
     private void FallDown()
     {
-        var endpoint = Translation + new Vector3(0, -TILE_HEIGHT, 0);
+        var endpoint = Translation + new Vector3(0, -Sizes.FloorHeight, 0);
         
         _tween.InterpolateProperty(this, "translation",
             Translation,
@@ -171,7 +169,7 @@ public class Player : Spatial
         var playerHeight = 0.5f; // We need to include playerHeight to include the tile under us in collision testing
         var from = GlobalTransform.origin + new Vector3(0, playerHeight, 0);
 
-        var endpoint = from + new Vector3(0, -TILE_HEIGHT * 2, 0);
+        var endpoint = from + new Vector3(0, -Sizes.FloorHeight * 2, 0);
         
         var intersectionResult = spaceState.IntersectRay(from, endpoint, collideWithAreas: true);
 
@@ -182,7 +180,7 @@ public class Player : Spatial
         }
 
         var intersectionPoint = (Vector3)intersectionResult["position"];
-        if (from.y - intersectionPoint.y > TILE_HEIGHT)
+        if (from.y - intersectionPoint.y > Sizes.FloorHeight)
         {
             return true;
         }
@@ -194,8 +192,8 @@ public class Player : Spatial
     {
         var spaceState = GetWorld().DirectSpaceState;
         var from = GlobalTransform.origin;
-        from.y += TILE_HEIGHT / 2;
-        endpoint.y += TILE_HEIGHT / 2;
+        from.y += Sizes.FloorHeight / 2;
+        endpoint.y += Sizes.FloorHeight / 2;
         var intersectionResult = spaceState.IntersectRay(from, endpoint, collideWithAreas: true);
         
         Console.WriteLine(intersectionResult);
@@ -220,7 +218,7 @@ public class Player : Spatial
         if(movementVector == Vector3.Zero)
             return false;
         
-        movementVector = movementVector.Normalized() * TILE_SIZE;
+        movementVector = movementVector.Normalized() * Sizes.Cell;
         var endpoint = Translation + movementVector;
 
         if (!CanMoveInto(endpoint))

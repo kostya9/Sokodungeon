@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dungeon;
 
 public class MapGen : Node
 {
@@ -211,9 +212,6 @@ p + + +|     | |
         };
     }
 
-    private const float xLength = 5.2f;
-    private const float yLength = 5.2f;
-    private const float floorHeight = 4.5f;
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
@@ -226,7 +224,8 @@ p + + +|     | |
         var floorResource = (PackedScene)ResourceLoader.Load("res://Scenes/Environment/DungeonTileA.tscn");
         var columnResource = (PackedScene)ResourceLoader.Load("res://Scenes/Environment/DungeonWallSeparatorA.tscn");
 
-        player.Translation = new Vector3(parsed.Player.Position.x * xLength, -parsed.Player.FloorIdx * floorHeight, parsed.Player.Position.y * yLength);
+        var floorCellDimensions = new Vector3(Sizes.Cell, Sizes.FloorHeight, Sizes.Cell); 
+        player.Translation = new Vector3(parsed.Player.Position.x, -parsed.Player.FloorIdx, parsed.Player.Position.y) * floorCellDimensions;
 
         for (var floorIdx = 0; floorIdx < parsed.Floors.Length; floorIdx++)
         {
@@ -327,10 +326,11 @@ p + + +|     | |
             }
         }
 
+        var floorCellDimensions = new Vector3(Sizes.Cell, Sizes.FloorHeight, Sizes.Cell); 
         foreach (var columnPos in columns)
         {
             var columnNode = (Spatial) columnResource.Instance();
-            columnNode.Translation = new Vector3(columnPos.x * xLength, -floorIdx * floorHeight, columnPos.y * yLength);
+            columnNode.Translation = new Vector3(columnPos.x, -floorIdx, columnPos.y) * floorCellDimensions;
             AddChild(columnNode);
         }
     }
@@ -338,14 +338,13 @@ p + + +|     | |
     private void DrawCells(Floor floor, int floorIdx, PackedScene floorResource)
     {
         var r = new Random();
+        var floorCellDimensions = new Vector3(Sizes.Cell, Sizes.FloorHeight, Sizes.Cell);
         foreach (var cell in floor.Cells)
         {
             var rot = r.Next(4) * Mathf.Pi / 2;
             var copy = (Spatial) floorResource.Instance();
 
-            var worldX = xLength * cell.Position.x;
-            var worldZ = yLength * cell.Position.y;
-            copy.Translation = new Vector3(worldX, -floorIdx * floorHeight, worldZ);
+            copy.Translation = new Vector3(cell.Position.x, -floorIdx, cell.Position.y) * floorCellDimensions;
             copy.Rotation = new Vector3(0, rot, 0);
 
             AddChild(copy);
@@ -354,19 +353,20 @@ p + + +|     | |
 
     private void DrawWalls(Floor floor, int floorIdx, PackedScene wallResource)
     {
+        var floorCellDimensions = new Vector3(Sizes.Cell, Sizes.FloorHeight, Sizes.Cell);
         var cellsByPosition = floor.Cells.ToDictionary(x => x.Position);
         foreach (var wall in floor.Walls)
         {
-            var worldFirstX = xLength * wall.FirstCellPos.x;
-            var worldFirstZ = yLength * wall.FirstCellPos.y;
+            var firstX = wall.FirstCellPos.x;
+            var firstY = wall.FirstCellPos.y;
 
-            var worldSecondX = xLength * wall.SecondCellPos.x;
-            var worldSecondZ = yLength * wall.SecondCellPos.y;
+            var secondX = wall.SecondCellPos.x;
+            var secondY = wall.SecondCellPos.y;
 
-            var worldX = (worldFirstX + worldSecondX) / 2;
-            var worldZ = (worldFirstZ + worldSecondZ) / 2;
+            var betweenCellX = (firstX + secondX) / 2;
+            var betweenCellY = (firstY + secondY) / 2;
 
-            var translation = new Vector3(worldX, -floorIdx * floorHeight, worldZ);
+            var translation = new Vector3(betweenCellX, -floorIdx, betweenCellY) * floorCellDimensions;
 
             if (wall.Type == WallType.Vertical)
             {
