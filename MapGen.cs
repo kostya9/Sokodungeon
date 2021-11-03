@@ -341,7 +341,6 @@ p + + +|     | |
         foreach (var cell in floor.Cells)
         {
             var rot = r.Next(4) * Mathf.Pi / 2;
-            rot = 0;
             var copy = (Spatial) floorResource.Instance();
 
             var worldX = xLength * cell.Position.x;
