@@ -89,7 +89,10 @@ p + + +|     | |
 
     public (Floor, Player?) ParseFloor(int floorIdx, string floorMap)
     {
-        var lines = floorMap.Trim('\r', '\n').Split('\r', '\n');
+        var lines = floorMap
+            .Replace("\r\n", "\n") // Make sure we are using \n for line ending
+            .Trim('\n')
+            .Split("\n");
 
         List<Cell> cells = new List<Cell>();
         List<Wall> walls = new List<Wall>();
@@ -338,6 +341,7 @@ p + + +|     | |
         foreach (var cell in floor.Cells)
         {
             var rot = r.Next(4) * Mathf.Pi / 2;
+            rot = 0;
             var copy = (Spatial) floorResource.Instance();
 
             var worldX = xLength * cell.Position.x;
