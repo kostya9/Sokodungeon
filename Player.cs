@@ -6,7 +6,7 @@ using Dungeon;
 public class Player : Spatial
 {
     public const float MOVE_TIME = 0.45f;
-    public const float TILE_SIZE = 4.8f;
+    public const float TILE_SIZE = 5.2f;
     public const float TILE_HEIGHT = 4.5f;
     
     
@@ -194,7 +194,12 @@ public class Player : Spatial
     {
         var spaceState = GetWorld().DirectSpaceState;
         var from = GlobalTransform.origin;
+        from.y += TILE_HEIGHT / 2;
+        endpoint.y += TILE_HEIGHT / 2;
         var intersectionResult = spaceState.IntersectRay(from, endpoint, collideWithAreas: true);
+        
+        Console.WriteLine(intersectionResult);
+        
         return intersectionResult.Count == 0;
     }
     

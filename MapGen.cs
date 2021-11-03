@@ -211,8 +211,8 @@ p + + +|     | |
         };
     }
 
-    private const float xLength = 4.8f;
-    private const float yLength = 4.8f;
+    private const float xLength = 5.2f;
+    private const float yLength = 5.2f;
     private const float floorHeight = 4.5f;
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
