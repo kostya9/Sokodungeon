@@ -28,6 +28,10 @@ config/icon="res://icon.png"
 
 singletons=[ "res://addons/godot-git-plugin/git_api.gdnlib" ]
 
+[global]
+
+anti=false
+
 [input]
 
 ui_left={
